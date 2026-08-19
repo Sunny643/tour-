@@ -21,8 +21,8 @@ export const appUsers = pgTable("app_users", {
   brandContactPhone: text("brand_contact_phone"),
   brandContactEmail: text("brand_contact_email"),
   brandContactWebsite: text("brand_contact_website"),
-  stripeCustomerId: text("stripe_customer_id").unique(),
-  stripeSubscriptionId: text("stripe_subscription_id"),
+  razorpayCustomerId: text("razorpay_customer_id").unique(),
+  razorpaySubscriptionId: text("razorpay_subscription_id"),
   plan: text("plan").notNull().default("free"),
   rendersUsedThisPeriod: integer("renders_used_this_period").notNull().default(0),
   periodResetAt: timestamp("period_reset_at", { withTimezone: true })

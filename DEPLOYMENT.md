@@ -22,7 +22,7 @@ You need accounts for all five before the app runs end to end.
 | [Supabase](https://supabase.com/dashboard) | A project | `DATABASE_URL` — use the **Connection pooler** URI (port 6543) |
 | [Cloudflare R2](https://dash.cloudflare.com) | A bucket + API token | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` |
 | [Shotstack](https://dashboard.shotstack.io) | Sign up | `SHOTSTACK_API_KEY` (sandbox key to start) |
-| [Stripe](https://dashboard.stripe.com) | A recurring Product/Price for "Pro" | `STRIPE_SECRET_KEY`, `STRIPE_PRO_PRICE_ID` |
+| [Razorpay](https://dashboard.razorpay.com) | A monthly Plan for "Pro" (Subscriptions → Plans) | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_PRO_PLAN_ID` |
 
 **Important — make the R2 bucket publicly readable** (R2 → your bucket → Settings →
 Public access, or attach a custom domain), then set `R2_PUBLIC_BASE_URL` to that
@@ -57,23 +57,29 @@ R2_BUCKET_NAME
 R2_PUBLIC_BASE_URL
 SHOTSTACK_API_KEY
 SHOTSTACK_ENV          -> sandbox
-STRIPE_SECRET_KEY
-STRIPE_PRO_PRICE_ID
-STRIPE_WEBHOOK_SECRET  -> fill in at step 4
-NEXT_PUBLIC_APP_URL    -> your Vercel URL, e.g. https://your-app.vercel.app
+RAZORPAY_KEY_ID
+RAZORPAY_KEY_SECRET
+RAZORPAY_PRO_PLAN_ID
+RAZORPAY_WEBHOOK_SECRET -> you choose this string; reuse it at step 4
 ```
 
 4. Deploy.
 
-## 4. Point the Stripe webhook at production
+## 4. Point the Razorpay webhook at production
 
 Once you have the Vercel URL:
 
-1. Stripe Dashboard → Developers → Webhooks → **Add endpoint**
-2. URL: `https://your-app.vercel.app/api/webhooks/stripe`
-3. Events: `checkout.session.completed`, `customer.subscription.updated`,
-   `customer.subscription.deleted`
-4. Copy the signing secret into `STRIPE_WEBHOOK_SECRET` in Vercel, then redeploy.
+1. Razorpay Dashboard → Settings → **Webhooks** → Add New Webhook
+2. URL: `https://your-app.vercel.app/api/webhooks/razorpay`
+3. Secret: the same string you set as `RAZORPAY_WEBHOOK_SECRET` in Vercel
+   (Razorpay does not generate this for you — you choose it)
+4. Active events: `subscription.activated`, `subscription.charged`,
+   `subscription.cancelled`, `subscription.completed`, `subscription.halted`,
+   `subscription.pending`
+
+Also set the post-payment redirect under Razorpay → Settings → Checkout so
+users land back on your app after authorizing. Razorpay has no per-request
+callback URL for subscriptions, so this is dashboard-side only.
 
 ## 5. Smoke-test production
 
@@ -87,5 +93,7 @@ in a private window.
   ships non-functional stub URLs. Swap in tracks licensed from Epidemic Sound /
   Artlist and set `is_placeholder = false`.
 - Switch `SHOTSTACK_ENV` to `production` and use a production Shotstack key.
-- Switch Stripe to live-mode keys and re-create the webhook against live mode.
+- Switch Razorpay from test keys (`rzp_test_…`) to live keys, and re-create the
+  webhook against the live account. Razorpay also requires KYC approval before
+  the live account can accept real payments — start that early, it takes days.
 - Revisit the render limits in `lib/billing/limits.ts` (currently free: 2, pro: 50).

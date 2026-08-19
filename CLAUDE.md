@@ -19,7 +19,7 @@ A SaaS product that lets real estate agents and Airbnb/short-term rental hosts u
 | File storage | Cloudflare R2 (or S3) |
 | Video rendering | Shotstack API (hosted JSON-template → video rendering) |
 | Job handling | Postgres `render_jobs` table + frontend polling (no external queue at MVP scale) |
-| Billing | Stripe (Checkout + Customer Portal) |
+| Billing | Razorpay (Subscriptions; hosted authorization page + API cancellation) |
 | Music | Curated, manually-licensed track library (Epidemic Sound / Artlist) — never pull from unlicensed sources |
 | Deployment | Vercel |
 
@@ -41,7 +41,7 @@ A SaaS product that lets real estate agents and Airbnb/short-term rental hosts u
 - Persona-aware defaults (pacing/aspect ratio suggestions differ for agent vs host)
 - Branding (logo + contact info) applied to renders
 - Preview, regenerate, download, shareable link
-- Auth + basic Stripe billing with usage limits
+- Auth + basic Razorpay billing with usage limits
 
 ### Nice-to-have (P1, not this pass)
 - AI-generated video mode as a premium toggle
@@ -81,7 +81,7 @@ GET    /api/music-tracks
 2. Upload & reorder: photo upload to storage, `project_photos` CRUD, drag-reorder UI
 3. Render pipeline: music library, 2-3 template presets, Shotstack integration, job polling, preview player
 4. Branding & polish: logo/contact overlay, price/title text overlay, download, shareable link, regenerate
-5. Billing: Stripe Checkout, usage-limit gating, Customer Portal
+5. Billing: Razorpay subscription checkout, usage-limit gating, cancellation
 
 Work through these roughly in order — later phases depend on the render pipeline existing and working.
 
@@ -103,7 +103,8 @@ R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=
 R2_BUCKET_NAME=
 SHOTSTACK_API_KEY=
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+RAZORPAY_WEBHOOK_SECRET=
+RAZORPAY_PRO_PLAN_ID=
 ```

@@ -13,18 +13,35 @@ interface AccountResponse {
 }
 
 export function BillingPanel() {
-  const { data } = useSWR<AccountResponse>("/api/account", fetcher);
+  const { data, mutate } = useSWR<AccountResponse>("/api/account", fetcher);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
 
-  async function go(endpoint: string) {
+  async function startCheckout() {
     setBusy(true);
     setError(null);
     try {
-      const { url } = await postJson<{ url: string }>(endpoint);
+      // Razorpay returns a hosted authorization page (short_url) rather than
+      // a Stripe-style Checkout session.
+      const { url } = await postJson<{ url: string }>("/api/razorpay/checkout");
       window.location.href = url;
     } catch (err) {
       setError((err as Error).message);
+      setBusy(false);
+    }
+  }
+
+  async function cancelSubscription() {
+    setBusy(true);
+    setError(null);
+    try {
+      await postJson("/api/razorpay/cancel");
+      setConfirmingCancel(false);
+      await mutate();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
       setBusy(false);
     }
   }
@@ -61,17 +78,30 @@ export function BillingPanel() {
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-      <div className="flex gap-2">
-        {appUser.plan === "free" ? (
-          <Button disabled={busy} onClick={() => go("/api/stripe/checkout")}>
-            {busy ? "Redirecting…" : "Upgrade to Pro"}
-          </Button>
-        ) : (
-          <Button variant="secondary" disabled={busy} onClick={() => go("/api/stripe/portal")}>
-            {busy ? "Redirecting…" : "Manage subscription"}
-          </Button>
-        )}
-      </div>
+      {appUser.plan === "free" ? (
+        <Button disabled={busy} onClick={startCheckout}>
+          {busy ? "Redirecting…" : "Upgrade to Pro"}
+        </Button>
+      ) : confirmingCancel ? (
+        <div className="space-y-2">
+          <p className="text-sm text-neutral-700">
+            Cancel your Pro subscription? You&apos;ll keep Pro access until the end of the
+            billing cycle you&apos;ve already paid for.
+          </p>
+          <div className="flex gap-2">
+            <Button variant="danger" disabled={busy} onClick={cancelSubscription}>
+              {busy ? "Cancelling…" : "Yes, cancel"}
+            </Button>
+            <Button variant="secondary" disabled={busy} onClick={() => setConfirmingCancel(false)}>
+              Keep Pro
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button variant="secondary" onClick={() => setConfirmingCancel(true)}>
+          Cancel subscription
+        </Button>
+      )}
     </Card>
   );
 }

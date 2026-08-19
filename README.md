@@ -18,7 +18,7 @@ music, text overlays) — **not** AI-generated video.
 | File storage | Cloudflare R2 (S3-compatible) |
 | Rendering | Shotstack Edit API |
 | Job handling | `render_jobs` table + frontend polling |
-| Billing | Stripe Checkout + Customer Portal |
+| Billing | Razorpay Subscriptions |
 | Deployment | Vercel |
 
 ## Setup
@@ -38,7 +38,7 @@ cp .env.example .env.local
 | Supabase | Postgres connection string (use the **pooler** URI, port 6543) | Project → Settings → Database |
 | Cloudflare R2 | Account ID, access key/secret, bucket name | Cloudflare → R2 → Manage API Tokens |
 | Shotstack | Sandbox API key | [dashboard.shotstack.io](https://dashboard.shotstack.io) |
-| Stripe | Secret + publishable key, webhook secret, a recurring Price ID for "Pro" | [dashboard.stripe.com](https://dashboard.stripe.com) |
+| Razorpay | Key id + secret, webhook secret, a monthly Plan id for "Pro" | [dashboard.razorpay.com](https://dashboard.razorpay.com) |
 
 **R2 bucket must be publicly readable** (or fronted by a custom domain) and
 `R2_PUBLIC_BASE_URL` set — Shotstack fetches photo URLs directly at render time,
@@ -68,14 +68,22 @@ node --env-file=.env.local scripts/smoke-shotstack.mjs
 It submits a 3-image render against the sandbox API, polls to completion, and
 prints the output URL.
 
-## Stripe webhooks locally
+## Razorpay webhooks locally
+
+Razorpay has no CLI tunnel equivalent to `stripe listen`, so expose your dev
+server and register the URL in the dashboard:
 
 ```bash
-stripe listen --forward-to localhost:3000/api/webhooks/stripe
-stripe trigger checkout.session.completed
+npx untun@latest tunnel http://localhost:3000
 ```
 
-Copy the `whsec_…` that `stripe listen` prints into `STRIPE_WEBHOOK_SECRET`.
+Then Razorpay Dashboard → Settings → Webhooks → **Add New Webhook**:
+
+- URL: `https://<your-tunnel>/api/webhooks/razorpay`
+- Secret: any string you choose — put the same value in `RAZORPAY_WEBHOOK_SECRET`
+- Events: `subscription.activated`, `subscription.charged`,
+  `subscription.cancelled`, `subscription.completed`, `subscription.halted`,
+  `subscription.pending`
 
 ## Architecture notes
 
@@ -92,6 +100,12 @@ Copy the `whsec_…` that `stripe listen` prints into `STRIPE_WEBHOOK_SECRET`.
   refreshes status from Shotstack on demand while the client polls every 3s.
 - **Usage limits** are enforced only at `POST /api/projects/:id/render`
   (`lib/billing/limits.ts`), with a lazy 30-day period reset — no cron needed.
+- **Razorpay differs from Stripe in two ways that shaped the billing code.**
+  There is no hosted Customer Portal, so `/api/razorpay/cancel` exposes
+  cancellation ourselves (at cycle end, so paid time isn't lost). And a created
+  subscription returns a `short_url` hosted authorization page we redirect to,
+  rather than a Checkout session. `lib/billing/razorpay.ts` is the only module
+  that touches their SDK.
 
 ## Known limitations
 
