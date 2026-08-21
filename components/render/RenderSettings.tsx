@@ -71,9 +71,30 @@ export function RenderSettings({ project, onChange, disabled }: Props) {
 
       <Field
         label="Music"
-        hint="Placeholder library — licensed tracks are swapped in before launch."
+        hint="Placeholder tracks are not playable yet — choose No music until licensed audio is added."
       >
         <div className="grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange({ musicTrackId: null })}
+            className={clsx(
+              "rounded-md border px-3 py-2 text-left text-sm disabled:opacity-50",
+              !project.musicTrackId
+                ? "border-neutral-900 bg-neutral-900 text-white"
+                : "border-neutral-300 bg-white hover:bg-neutral-50"
+            )}
+          >
+            <span className="block">No music</span>
+            <span
+              className={clsx(
+                "text-xs",
+                !project.musicTrackId ? "text-neutral-300" : "text-neutral-500"
+              )}
+            >
+              silent video
+            </span>
+          </button>
           {tracks.map((track) => (
             <button
               key={track.id}
