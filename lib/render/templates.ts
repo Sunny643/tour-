@@ -1,3 +1,7 @@
+// Valid Shotstack `effect` values (verified against their API, 2026-08-21):
+//   zoomIn / zoomInSlow / zoomInFast, zoomOut / zoomOutSlow / zoomOutFast,
+//   slideLeft|Right|Up|Down, each also with Slow / Fast suffixes.
+// The speed modifier is a suffix — "zoomInSlow", never "slowZoomIn".
 export interface TemplateStyle {
   id: string;
   label: string;
@@ -12,7 +16,7 @@ export const TEMPLATE_STYLES: TemplateStyle[] = [
     id: "classic-walkthrough",
     label: "Classic Walkthrough",
     description: "Slow pans, gentle crossfades — suited to a room-by-room listing tour.",
-    kenBurnsEffect: "slowZoomIn",
+    kenBurnsEffect: "zoomInSlow",
     transition: { in: "fade", out: "fade" },
   },
   {
@@ -26,7 +30,7 @@ export const TEMPLATE_STYLES: TemplateStyle[] = [
     id: "modern-minimal",
     label: "Modern Minimal",
     description: "Clean, understated pans with simple fades — works for either persona.",
-    kenBurnsEffect: "zoomOut",
+    kenBurnsEffect: "zoomOutSlow",
     transition: { in: "fade", out: "fade" },
   },
 ];

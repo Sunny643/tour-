@@ -59,7 +59,17 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     },
   });
 
-  const { providerId } = await submitRender(edit);
+  let providerId: string;
+  try {
+    ({ providerId } = await submitRender(edit));
+  } catch (err) {
+    // Surface the provider's own message so a bad timeline is diagnosable
+    // from the UI instead of showing a bare 500.
+    return NextResponse.json(
+      { error: `Render could not be started: ${(err as Error).message}` },
+      { status: 502 }
+    );
+  }
 
   const renderJob = await createRenderJob({
     projectId: id,
