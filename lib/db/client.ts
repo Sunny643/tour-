@@ -10,18 +10,36 @@ declare global {
 }
 
 function initDb(): Db {
+  if (global.__db) return global.__db;
+
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     throw new Error("DATABASE_URL is not set");
   }
-  // `prepare: false` is required for Supabase's transaction-mode pooler.
-  const client = global.__dbClient ?? postgres(connectionString, { prepare: false });
-  const instance = global.__db ?? drizzle(client, { schema });
 
-  if (process.env.NODE_ENV !== "production") {
-    global.__dbClient = client;
-    global.__db = instance;
-  }
+  const client =
+    global.__dbClient ??
+    postgres(connectionString, {
+      // Required for Supabase's transaction-mode pooler.
+      prepare: false,
+      // Each serverless instance keeps a single connection. Supabase's pooler
+      // caps total client connections (200 on the free tier), and Vercel may
+      // run many instances at once — a larger pool per instance exhausts that
+      // ceiling and every query starts failing with EMAXCONN.
+      max: 1,
+      // Hand connections back quickly so idle instances stop holding slots.
+      idle_timeout: 20,
+      connect_timeout: 10,
+    });
+
+  const instance = drizzle(client, { schema });
+
+  // Cache in every environment, production included. Module scope is reused
+  // across invocations on a warm instance, so this is what keeps us from
+  // opening a fresh pool per request.
+  global.__dbClient = client;
+  global.__db = instance;
+
   return instance;
 }
 
