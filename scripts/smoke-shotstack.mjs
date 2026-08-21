@@ -20,9 +20,9 @@ if (!KEY) {
 }
 
 const SAMPLE_IMAGES = [
-  "https://shotstack-assets.s3.amazonaws.com/images/waterfall-square.jpg",
-  "https://shotstack-assets.s3.amazonaws.com/images/beach-square.jpg",
-  "https://shotstack-assets.s3.amazonaws.com/images/mountain-square.jpg",
+  "https://picsum.photos/seed/livingroom/1280/720",
+  "https://picsum.photos/seed/kitchen/1280/720",
+  "https://picsum.photos/seed/bedroom/1280/720",
 ];
 
 const body = {
